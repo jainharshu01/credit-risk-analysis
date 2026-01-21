@@ -3,7 +3,7 @@
 
 This project implements an end-to-end Machine Learning pipeline to assess credit risk. The system classifies loan applicants as likely to default (1) or fully repay (0) by analyzing financial history, employment data, and loan characteristics.
 
-The project moves beyond baseline models to include tree-based algorithms and a dynamic weighted ensemble.
+Through extensive experimentation with Optuna hyperparameter tuning and Ensemble strategies, this project identifies the most robust predictors of financial default while maintaining industry-standard metrics like the Gini Coefficient.
 
 It follows the complete ML workflow:
 - Data preprocessing
@@ -11,7 +11,6 @@ It follows the complete ML workflow:
 - Model training
 - Model evaluation
 - Model persistence using .pkl files
-- Reproducible environment using a virtual environment
 
 ## Problem Statement
 
@@ -44,7 +43,7 @@ CREDIT-RISK-ANALYSIS/<br>
 │   ├── cm_naive_bayes.png<br>
 │   ├── cm_random_forest.png<br>
 │   ├── cm_xgboost.png<br>
-│   ├── ensemble_vs_best_model.csv # Head-to-head comparison<br>
+│   ├── final_ensemble_comparison.csv # Head-to-head comparison<br>
 │   └── model_performance_summary.csv # Final leaderboard<br>
 ├── src/                          # Modular source code<br>
 │   ├── config.py<br>
@@ -80,18 +79,30 @@ Because credit data is often imbalanced, we focused on:
 <br>
 
 4️⃣ Dynamic Ensemble: <br>
-Implemented a Weighted Average Ensemble that automatically selects the "Top N" performing models from the leaderboard. The ensemble assigns voting power based on each model's ROC-AUC score.
+Duo Ensemble: An 80/20 weighted split between XGBoost and Logistic Regression to combine non-linear capture with linear stability.
+
+Trio Ensemble: A proportional weighting of the Top 3 models based on their ROC-AUC scores.
 <br> 
 
 ## Final Performance Results: 
 
-| Model | ROC-AUC | Gini | Weighted F1 |
-| :--- | :---: | :---: | :---: |
-| **LightGBM** | **0.7636** | **0.5273** | **0.7961** |
-| XGBoost | 0.7623 | 0.5246 | 0.7950 |
-| Dynamic Ensemble | 0.7622 | 0.5244 | 0.7247 |
+| Rank | Model | ROC-AUC | Gini Score |
+| :--- | :--- | :---: | :---: |
+| **1st** | **XGBoost (Optuna Tuned)** | **0.7644** | **0.5288** |
+| 2nd | LightGBM (Optuna Tuned) | 0.7641 | 0.5282 |
+| 3rd | Duo Ensemble (XGB + LogReg) | 0.7637 | 0.5274 |
+| 4th | Trio Ensemble (Top 3 Weighted) | 0.7626 | 0.5272 |
+| 5th | Logistic Regression | 0.7545 | 0.5090 |
 
+> **Key Finding:** While the ensemble strategies provided high stability, the individual **XGBoost** model (after Optuna hyperparameter optimization) achieved the highest discriminatory power with a Gini score of **0.5288**. This suggests that for this specific feature space, a finely-tuned non-linear model captures the risk signal more effectively than a weighted average of diverse models.
 > **Key Finding:** During the final evaluation, the individual **LightGBM** model slightly outperformed the weighted ensemble. This is likely due to the high correlation between the top tree-based models. For this reason, LightGBM was selected as the final production estimator for its superior performance and lower architectural complexity.<br>
+
+## **Feature Importance & Diagnostics**
+The model identified Debt Settlement Status, Loan Term, and Interest Rates as the most critical indicators of default risk.
+
+- Debt Settlement Flags: By far the strongest predictor of future risk.
+- Loan Term: Longer-term loans (60 months) showed a higher correlation with default.
+- Interest Rates & Grades: Directly reflected the lender's initial risk assessment and proved highly accurate.
 
 ## Key Learning Outcomes:
 - Pipeline Modularity: Decoupled preprocessing, training, and evaluation for easier debugging.
